@@ -1,129 +1,230 @@
-const habitListElement = document.querySelector('.habits-list');
-const habitElements = document.querySelectorAll('[data-habit]');
-const habitToolbarElement = document.querySelector('[data-habit-toolbar]');
-const addHabitElement = document.querySelector('.add-habit-button');
-const toolBarIconElements = document.querySelectorAll('[data-toolbar-icon]');
-const deleteHabitElement = document.querySelector('[data-toolbar-delete]');
-const moveUpHabitElement = document.querySelector('[data-toolbar-up]');
-const moveDownHabitElement = document.querySelector('[data-toolbar-down]');
-const habitImpactButtonElement = document.querySelectorAll('[data-habit-impact]');
-
-let selectedHabit = habitElements[0];
-SelectHabit(selectedHabit);
-
-habitElements.forEach(habit =>{
-
-    habit.addEventListener('click', () =>{
-        SelectHabit(habit);
-    })
-})
-
-addHabitElement.addEventListener('click', () =>{
-    habitListElement.parentElement.appendChild(habitToolbarElement);
-    let newHabit = habitElements[0].parentNode.cloneNode(true);
-    habitListElement.appendChild(newHabit);
-
-    newHabit.querySelector('[data-habit-text]').value = '';
-
-
-    var child = newHabit.childNodes[1];
-    SelectHabit(child);
-
-    var childImpactButton = child.querySelector('[data-habit-impact]');
-
-    childImpactButton.innerText = '/';
-    childImpactButton.style.background = "#FFD666";
-
-
-    childImpactButton.addEventListener('click', () =>{
-        toggleHabitImpact(childImpactButton);
-    })
-
-    child.addEventListener('click', () =>{
-        SelectHabit(child);
-    })
-})
-
-function SelectHabit(newHabit){
-
-    if (selectedHabit !== undefined) {
-        selectedHabit.classList.remove('selected');
+class Habit{
+    constructor(description, impact){
+        this.description = description;
+        this.impact = impact;
     }
-
-    selectedHabit = newHabit;
-    selectedHabit.classList.add('selected');
-    selectedHabit.parentNode.appendChild(habitToolbarElement);
-    habitToolbarElement.classList.add('grow');
 }
 
-function changeHabitOrder(up){
-  
-    if (up){
-        toHabit = selectedHabit.parentNode.previousElementSibling;
+const habitListElement = document.querySelector('[data-habit-list]');
+const addHabitButton = document.querySelector('[add-habit]');
+
+const habitImpact = {
+    positive: "+",
+    negative: '-',
+    neutral: '/'
+}
+
+
+const habitList = JSON.parse(localStorage.getItem('habits'));
+
+let toolbarContainer;
+let selectedHabit;
+let selectedContainer;
+
+habitList.forEach(habit => {
+    displayHabit(habit);
+})
+
+function createHabit(){
+    const newHabit = new Habit("", habitImpact.neutral);
+    habitList.push(newHabit);
+    displayHabit(newHabit);  
+    saveImpactList();
+}
+
+createToolbar();
+
+function toggleImpact(habit){
+
+    switch (habit.impact){
+
+        case habitImpact.positive:
+            habit.impact = habitImpact.neutral;
+            break;
+
+        case habitImpact.neutral:
+            habit.impact = habitImpact.negative;
+            break;
+
+        case habitImpact.negative:
+            habit.impact = habitImpact.positive;
+            break;     
     }
+}
 
-    else{
-         if (selectedHabit.parentNode.nextElementSibling == undefined){
-         habitListElement.insertBefore(selectedHabit.parentNode, habitListElement.children[0]);   
-          return;
-          }
+function displayHabit(habit){
 
-          if (selectedHabit.parentNode.nextElementSibling.nextElementSibling == undefined){
-            habitListElement.append(selectedHabit.parentNode);
-           return;
-          }
-           toHabit = selectedHabit.parentNode.nextElementSibling;
-    }
+        //List Item
+        const habitListItem = document.createElement('li');
+        habitListItem.classList.add("habit-list-item");
 
-    var toHabit = up ? selectedHabit.parentNode.previousElementSibling : selectedHabit.parentNode.nextElementSibling.nextElementSibling;
+        // Div
+        const habitDiv = document.createElement('div');
+        habitDiv.classList.add('habit');
 
-    
-    for (var i = 0; i < habitListElement.children.length; i++){
+        habitListItem.appendChild(habitDiv);
+
+        // Input Text
+        const habitInput = document.createElement('input');
+        habitInput.type = 'text';
+        habitInput.placeholder = 'Enter Habit';
+        habitInput.value = habit.description;
+
+        habitDiv.appendChild(habitInput);  
+
+        // Impact Button
+        const impactButton = document.createElement('button');
+        impactButton.classList.add('habit-impact');
+        impactButton.innerText = habit.impact;
+
+        updateHabitColor(habit, impactButton);
+
+        habitDiv.appendChild(impactButton);    
         
-        if (habitListElement.children[i] === selectedHabit.parentNode){
+        // Append to List
+        habitListElement.appendChild(habitListItem);
 
-            habitListElement.insertBefore(selectedHabit.parentNode, toHabit);                   
-        }
+        // Add Listeners
+        addHabitEventListeners(habit, habitListItem, habitDiv, habitInput, impactButton);
+}
+
+function createToolbar(){
+    toolbarContainer = document.createElement('div');
+    toolbarContainer.classList.add('habit-toolbar');
+
+    const toolbarMoveUp = document.createElement('i');
+    toolbarMoveUp.classList.add('fa-solid');
+    toolbarMoveUp.classList.add('fa-arrow-up');
+    toolbarContainer.appendChild(toolbarMoveUp);
+
+    const toolbarMoveDown = document.createElement('i');
+    toolbarMoveDown.classList.add('fa-solid');
+    toolbarMoveDown.classList.add('fa-down-long');
+    toolbarContainer.appendChild(toolbarMoveDown);
+
+    const toolbarDelete = document.createElement('i');
+    toolbarDelete.classList.add('fa-solid');
+    toolbarDelete.classList.add('fa-trash-can');
+    toolbarContainer.appendChild(toolbarDelete);
+
+    addToolbarEventListeners(toolbarMoveUp, toolbarMoveDown, toolbarDelete);
+    
+}
+
+function saveImpactList(){
+    localStorage.setItem('habits', JSON.stringify(habitList));
+}
+
+function selectHabit(habit, container){
+
+    deselectHabit();
+
+    container.classList.add('selected');
+
+    selectedHabit = habit;
+    selectedContainer = container;
+}
+
+function deselectHabit(){
+    if (selectedContainer !== undefined){
+        selectedContainer.classList.remove('selected')
     }
 }
 
-function toggleHabitImpact(habit){
+function moveHabit(habit, up){
+    var habitIndex = habitList.indexOf(habit);
+    
+    var previousHabit = habitList[habitIndex - 1];
+    var nextHabit = habitList[habitIndex + 1];
 
-    switch(habit.innerText){
-        case '+':
-            habit.innerText = '-';
-            habit.style.background = "#FC3535"
+    if (up){
+        if (previousHabit == null) return;
+    habitList[habitIndex] = previousHabit;
+    habitList[habitIndex - 1] = habit;
+
+    }
+    else{
+        if (nextHabit == null) return;
+        habitList[habitIndex] = nextHabit;
+        habitList[habitIndex + 1] = habit;
+    }
+
+    saveImpactList();
+    location.reload();
+}
+
+function deleteHabit(habit){
+    var habitIndex = habitList.indexOf(habit);
+    habitList.splice(habitIndex, 1);
+    saveImpactList();
+    location.reload();
+}
+
+function clearList(){
+    const emptyHabitList = [];
+    localStorage.setItem('habits', JSON.stringify(emptyHabitList));
+}
+
+function updateHabitColor(habit, impactButton){
+            
+    switch (habit.impact){
+        case habitImpact.positive:
+            impactButton.style.backgroundColor = '#65C876';
             break;
 
-        case '-':
-            habit.innerText = '/';
-            habit.style.background = "#FFD666"
-            break;
+        case habitImpact.neutral:
+                impactButton.style.backgroundColor = '#FEFF9B';
+                break;  
 
-        case '/':
-            habit.innerText = '+';
-            habit.style.background = "#75FF62"
-            break;
+                case habitImpact.negative:
+                    impactButton.style.backgroundColor = '#D32D2D';
+                    break;
     }
 }
 
-deleteHabitElement.addEventListener('click', () =>{
-    if (selectedHabit !== undefined){
-        selectedHabit.parentNode.remove();
+// Event Listeners
+addHabitButton.addEventListener('click', () =>{
+    createHabit();
+});
+
+document.addEventListener('click', (e) =>{
+    if (e.target.nodeName == "MAIN" || e.target.nodeName == 'HTML'){
+        deselectHabit();
+        toolbarContainer.remove();
     }
 })
 
-moveUpHabitElement.addEventListener('click', () => {
-    changeHabitOrder(true);
-})
 
-moveDownHabitElement.addEventListener('click', () => {
-    changeHabitOrder(false);
-})
+function addHabitEventListeners(habit, habitListItem, habitContainer, inputField, impactButton){
 
-habitImpactButtonElement.forEach(habit => {
-    habit.addEventListener('click', () =>{
-        toggleHabitImpact(habit);
+    impactButton.addEventListener('click', () => {
+        toggleImpact(habit);
+        impactButton.innerText = habit.impact;
+        updateHabitColor(habit, impactButton);
+        saveImpactList();
     })
-})
 
+    inputField.addEventListener('change', () => {
+        habit.description = inputField.value;
+        saveImpactList();
+    })    
+
+    habitContainer.addEventListener('click', () =>{
+       selectHabit(habit, habitContainer);
+       habitListItem.appendChild(toolbarContainer);
+    })
+}
+
+function addToolbarEventListeners(up, down, remove){
+    up.addEventListener('click', () =>{
+        moveHabit(selectedHabit, up);
+    })
+
+    down.addEventListener('click', () =>{
+        moveHabit(selectedHabit, !up);
+    })
+
+    remove.addEventListener('click', () =>{
+        deleteHabit(selectedHabit);
+    })
+}

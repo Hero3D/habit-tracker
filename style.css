@@ -47,10 +47,6 @@ input, input:focus, textarea:focus{
     border-radius: 1rem;
 }
 
-.habit:hover{
-    cursor: pointer;
-}
-
 .habit-toolbar{
     text-align: center;
 }
@@ -77,15 +73,32 @@ input, input:focus, textarea:focus{
 }
 
 .add-habit-button{
-    background-color: #00000041;
+    background-color: #ffffff00;
     border-radius: 25px;
     color:white;
-    border: .05rem dashed black;
+    border: .12rem dashed white;
     width: 100%;
+}
+
+.main-content{
+    min-width: 80%;
+}
+
+.main-content button:hover{
+    background-color: rgb(255, 217, 146);
 }
 
 .selected{
     border:.1rem dashed black;
+}
+
+.habit-toolbar i:hover{
+    color:whitesmoke;
+}
+
+ul button:hover{
+    color:black;
+    cursor:pointer;
 }
 
 @keyframes grow{
